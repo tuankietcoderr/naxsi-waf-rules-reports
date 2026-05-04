@@ -117,7 +117,7 @@ const server = http.createServer((req, res) => {
   send(res, 404, "Not found", "text/plain; charset=utf-8");
 });
 
-server.listen(port, () => {
-  console.log(`NAXSI web UI running at http://localhost:${port}`);
+server.listen(port, "0.0.0.0", () => {
+  console.log(`NAXSI web UI running at ${port}`);
   console.log(`Rules file: ${rulesPath}`);
 });
