@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NAXSI Score Reporter</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <span class="kicker">NAXSI SCORE REPORTER</span>
+
+      <section class="layout">
+        <div class="panel input-shell">
+          <h2>Input Curl</h2>
+          <textarea
+            id="curlInput"
+            spellcheck="false"
+            placeholder="Paste your CURL command here"
+          >
+curl 'https://example.com/search?q=select%201'
+-H 'accept: text/html'
+-H 'user-agent: Mozilla/5.0'
+-b 'session_id=abc123'</textarea
+          >
+          <div class="toolbar">
+            <button id="analyzeBtn">Analyze Report</button>
+            <button id="sampleBtn" class="secondary">Load Sample</button>
+            <span class="hint"
+              >Tip: paste a multi-line curl exactly as copied from
+              terminal/devtools.</span
+            >
+          </div>
+        </div>
+
+        <div class="panel report-shell">
+          <h2>Report</h2>
+          <div id="statusBar" class="status">
+            <span class="muted">Waiting for input...</span>
+            <span class="badge allowed">ALLOWED</span>
+          </div>
+          <div id="reportRoot">
+            <div class="empty-state">
+              Run an analysis to see the matched rules and score breakdown here.
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
