@@ -19,21 +19,21 @@ npm link
 # Basic
 node cli.js "curl http://example.com/search?q=select+1"
 # or
-naxsi-score "curl http://example.com/search?q=select+1"
+naxsi-report "curl http://example.com/search?q=select+1"
 
 # Multi-line CURL (with backslash)
 node cli.js "curl 'http://example.com/search?q=test' \\
   -H 'User-Agent: Mozilla' \\
   -b 'session_id=abc123'"
 # or
-naxsi-score "curl 'http://example.com/search?q=test' \\
+naxsi-report "curl 'http://example.com/search?q=test' \\
   -H 'User-Agent: Mozilla' \\
   -b 'session_id=abc123'"
 
 # With options
 node cli.js "curl http://example.com" --rules ./reference/naxsi_core.rules --plain --debug
 # or
-naxsi-score "curl http://example.com" --rules ./reference/naxsi_core.rules --plain --debug
+naxsi-report "curl http://example.com" --rules ./reference/naxsi_core.rules --plain --debug
 ```
 
 ### 2. Use as module
@@ -117,25 +117,25 @@ TOTAL: 16  → ❌ BLOCKED
 ### SQL Injection
 
 ```bash
-naxsi-score "curl 'http://localhost/user?id=1 OR 1=1'"
+naxsi-report "curl 'http://localhost/user?id=1 OR 1=1'"
 ```
 
 ### XSS Attack
 
 ```bash
-naxsi-score "curl -d '<img src=x onerror=alert(1)>' http://localhost/upload"
+naxsi-report "curl -d '<img src=x onerror=alert(1)>' http://localhost/upload"
 ```
 
 ### Path Traversal
 
 ```bash
-naxsi-score "curl 'http://localhost/file?path=../../../../etc/passwd'"
+naxsi-report "curl 'http://localhost/file?path=../../../../etc/passwd'"
 ```
 
 ### Multiple Threats
 
 ```bash
-naxsi-score "curl 'http://localhost/search?q=<script>alert(1)</script> UNION SELECT * FROM users'"
+naxsi-report "curl 'http://localhost/search?q=<script>alert(1)</script> UNION SELECT * FROM users'"
 ```
 
 ## Scoring Rules
