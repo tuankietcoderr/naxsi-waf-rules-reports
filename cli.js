@@ -21,7 +21,7 @@ if (args.length === 0 || args[0] === "--help" || args[0] === "-h") {
   console.log(chalk.yellow("Options:"));
   console.log("  <curl-command>      CURL command to analyze (required)");
   console.log(
-    "  --rules <path>      Path to NAXSI rules file (default: ./reference/nasxi_core.rules)",
+    "  --rules <path>      Path to NAXSI rules file (default: ./reference/naxsi_core.rules)",
   );
   console.log(
     "  --plain             Generate plain text report without colors",
@@ -70,7 +70,7 @@ if (!curlCommand) {
 
 // Set default rules path if not provided
 if (!rulesPath) {
-  rulesPath = path.join(__dirname, "reference", "nasxi_core.rules");
+  rulesPath = path.join(__dirname, "reference", "naxsi_core.rules");
 }
 
 // Check if rules file exists

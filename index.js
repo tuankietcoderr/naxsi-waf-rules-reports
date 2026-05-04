@@ -13,11 +13,16 @@ const { generateReport, generatePlainReport } = require("./lib/reporter");
  */
 function analyzeRequest(curlCommand, rulesPath, options = {}) {
   // Parse rules file
-  const rules = parseRulesFile(rulesPath);
+  let rules = parseRulesFile(rulesPath);
+
+  // Filter rules if specific IDs provided
+  if (options.filterRuleIds && Array.isArray(options.filterRuleIds)) {
+    const filterSet = new Set(options.filterRuleIds);
+    rules = rules.filter((rule) => filterSet.has(rule.id));
+  }
 
   // Parse CURL request
   const request = parseCurl(curlCommand);
-  console.log({ curlCommand, body: request.body });
 
   // Find matching rules
   const matches = [];

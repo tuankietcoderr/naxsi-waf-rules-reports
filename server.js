@@ -4,11 +4,12 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const { analyzeRequest } = require("./index");
+const { parseRulesFile } = require("./lib/ruleParser");
 
 const port = Number(process.env.PORT || 3000);
 const rootDir = __dirname;
 const publicDir = path.join(rootDir, "public");
-const rulesPath = path.join(rootDir, "reference", "nasxi_core.rules");
+const rulesPath = path.join(rootDir, "reference", "naxsi_core.rules");
 
 function send(res, statusCode, body, contentType) {
   res.writeHead(statusCode, {
@@ -53,6 +54,9 @@ async function handleAnalyze(req, res) {
     const curl = String(payload.curl || "")
       .replace(/\r\n/g, "\n")
       .trim();
+    const selectedRuleIds = Array.isArray(payload.selectedRuleIds)
+      ? payload.selectedRuleIds.map((id) => parseInt(id))
+      : null;
 
     if (!curl) {
       sendJson(res, 400, { error: "curl is required" });
@@ -64,8 +68,29 @@ async function handleAnalyze(req, res) {
       return;
     }
 
-    const result = analyzeRequest(curl, rulesPath);
+    const result = analyzeRequest(curl, rulesPath, {
+      filterRuleIds: selectedRuleIds,
+    });
     sendJson(res, 200, { result });
+  } catch (error) {
+    sendJson(res, 500, { error: error.message });
+  }
+}
+
+async function handleGetRules(req, res) {
+  try {
+    if (!fs.existsSync(rulesPath)) {
+      sendJson(res, 500, { error: `Rules file not found: ${rulesPath}` });
+      return;
+    }
+
+    const allRules = parseRulesFile(rulesPath);
+    const rules = allRules.map((rule) => ({
+      id: rule.id,
+      msg: rule.msg,
+    }));
+
+    sendJson(res, 200, { rules });
   } catch (error) {
     sendJson(res, 500, { error: error.message });
   }
@@ -76,6 +101,11 @@ const server = http.createServer((req, res) => {
 
   if (requestUrl.pathname === "/api/analyze" && req.method === "POST") {
     handleAnalyze(req, res);
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/rules" && req.method === "GET") {
+    handleGetRules(req, res);
     return;
   }
 

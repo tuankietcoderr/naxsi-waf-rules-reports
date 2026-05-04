@@ -6,7 +6,7 @@ const path = require("path");
 
 console.log(chalk.bold.cyan("Testing NAXSI Score Reporter...\n"));
 
-const rulesPath = path.join(__dirname, "reference", "nasxi_core.rules");
+const rulesPath = path.join(__dirname, "reference", "naxsi_core.rules");
 
 // Test cases
 const testCases = [

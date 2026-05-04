@@ -3,7 +3,119 @@ const analyzeBtn = document.getElementById("analyzeBtn");
 const sampleBtn = document.getElementById("sampleBtn");
 const reportRoot = document.getElementById("reportRoot");
 const statusBar = document.getElementById("statusBar");
+const filterPanel = document.getElementById("filterPanel");
+const rulesFilter = document.getElementById("rulesFilter");
+const zonesFilter = document.getElementById("zonesFilter");
+const rulesToggleAll = document.getElementById("rulesToggleAll");
+const zonesToggleAll = document.getElementById("zonesToggleAll");
+const themeToggle = document.getElementById("themeToggle");
+
 let activeTabId = "summary";
+let lastResult = null;
+let selectedRules = new Set();
+let selectedZones = new Set();
+
+// Theme management
+function initializeTheme() {
+  const savedTheme = localStorage.getItem("theme") || "dark";
+  applyTheme(savedTheme);
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  localStorage.setItem("theme", theme);
+  updateThemeToggleButton(theme);
+}
+
+function updateThemeToggleButton(theme) {
+  if (theme === "dark") {
+    themeToggle.textContent = "☀️ Light";
+    themeToggle.title = "Switch to light mode";
+  } else {
+    themeToggle.textContent = "🌙 Dark";
+    themeToggle.title = "Switch to dark mode";
+  }
+}
+
+function toggleTheme() {
+  const currentTheme =
+    document.documentElement.getAttribute("data-theme") || "dark";
+  const newTheme = currentTheme === "dark" ? "light" : "dark";
+  applyTheme(newTheme);
+}
+
+// Initialize filters on page load
+async function initializeFilters() {
+  try {
+    const response = await fetch("/api/rules");
+    if (!response.ok) {
+      console.error("Failed to load rules");
+      return;
+    }
+
+    const data = await response.json();
+    const rules = data.rules || [];
+
+    // Display filter panel
+    filterPanel.style.display = "block";
+
+    // Populate rules filter
+    selectedRules = new Set(rules.map((r) => r.id));
+    rulesFilter.innerHTML = rules
+      .map(
+        (rule) => `
+        <div class="filter-item">
+          <label>
+            <input type="checkbox" value="${rule.id}" class="rule-checkbox" checked />
+            <span>Rule ${rule.id}: ${escapeHtml(rule.msg || "")}</span>
+          </label>
+        </div>
+      `,
+      )
+      .join("");
+
+    document.querySelectorAll(".rule-checkbox").forEach((checkbox) => {
+      checkbox.addEventListener("change", handleRuleFilterChange);
+    });
+
+    rulesToggleAll.checked = true;
+  } catch (error) {
+    console.error("Error initializing filters:", error);
+  }
+}
+
+// Initialize zones filter when result comes back
+function initializeZonesFilter(matches) {
+  const zoneFilterSection = document.getElementById("zoneFilterSection");
+  const zones = new Set();
+
+  matches.forEach((match) => {
+    zones.add(match.source);
+  });
+
+  selectedZones = new Set(zones);
+
+  zonesFilter.innerHTML = Array.from(zones)
+    .sort()
+    .map(
+      (zone) => `
+        <div class="filter-item">
+          <label>
+            <input type="checkbox" value="${zone}" class="zone-checkbox" checked />
+            <span>${escapeHtml(zone)}</span>
+          </label>
+        </div>
+      `,
+    )
+    .join("");
+
+  document.querySelectorAll(".zone-checkbox").forEach((checkbox) => {
+    checkbox.addEventListener("change", handleZoneFilterChange);
+  });
+
+  zonesToggleAll.checked = true;
+  zoneFilterSection.style.display = "block";
+}
 
 const sampleCurl = [
   "curl 'https://sso-aicad-test-production.tgl-cloud.com/jp/login?client_id=41443fc9-36d8-4840-95d2-831794527eb5&callback_url=localhost%3A3001%2Fjp%2Fims%2Fincident%3Fstatus%3Dnew%26status%3Din_progress%26status%3Dwait_for_confirm%26status%3Dconfirmed%26status%3Ddev_confirming%26status%3Ddone%26categories%3Dimprove%26assignee%3Df72997f7-eb46-41cd-9f43-8599eeb9ba6f%26page%3D1%26manager%3Df72997f7-eb46-41cd-9f43-8599eeb9ba6f%26creator%3Dc4cf004f-2348-4292-b164-5570a3134234%26company%3Da0fdb23a-cb85-48f3-8448-5953abe244a0%26version%3Da09251ef-1b29-40df-8796-135d32ee36da%26bugType%3Dares%26funcCode%3Dmaterial_list%26createdAtFrom%3D2026-05-01%26createdAtTo%3D2026-05-08%26endDateFrom%3D2026-05-01%26priority%3Dnormal' \\",
@@ -128,6 +240,89 @@ function whitelistTargetForSource(source) {
   return "$URL";
 }
 
+function populateFilters(matches) {
+  // Zones filter is now populated after analysis
+  initializeZonesFilter(matches);
+}
+
+function handleRuleFilterChange(e) {
+  const ruleId = parseInt(e.target.value);
+  if (e.target.checked) {
+    selectedRules.add(ruleId);
+  } else {
+    selectedRules.delete(ruleId);
+  }
+  updateToggleAllState();
+  rerenderResult();
+}
+
+function handleZoneFilterChange(e) {
+  const zone = e.target.value;
+  if (e.target.checked) {
+    selectedZones.add(zone);
+  } else {
+    selectedZones.delete(zone);
+  }
+  updateToggleAllState();
+  rerenderResult();
+}
+
+function updateToggleAllState() {
+  const allRuleCheckboxes = document.querySelectorAll(".rule-checkbox");
+  const allZoneCheckboxes = document.querySelectorAll(".zone-checkbox");
+
+  const allRulesChecked = Array.from(allRuleCheckboxes).every(
+    (cb) => cb.checked,
+  );
+  const allZonesChecked = Array.from(allZoneCheckboxes).every(
+    (cb) => cb.checked,
+  );
+
+  rulesToggleAll.checked = allRulesChecked;
+  zonesToggleAll.checked = allZonesChecked;
+}
+
+function handleRulesToggleAll(e) {
+  document.querySelectorAll(".rule-checkbox").forEach((checkbox) => {
+    checkbox.checked = e.target.checked;
+    if (e.target.checked) {
+      selectedRules.add(parseInt(checkbox.value));
+    } else {
+      selectedRules.delete(parseInt(checkbox.value));
+    }
+  });
+  rerenderResult();
+}
+
+function handleZonesToggleAll(e) {
+  document.querySelectorAll(".zone-checkbox").forEach((checkbox) => {
+    checkbox.checked = e.target.checked;
+    if (e.target.checked) {
+      selectedZones.add(checkbox.value);
+    } else {
+      selectedZones.delete(checkbox.value);
+    }
+  });
+  rerenderResult();
+}
+
+function getFilteredMatches(matches) {
+  return matches.filter(
+    (match) =>
+      selectedRules.has(match.rule.id) && selectedZones.has(match.source),
+  );
+}
+
+function rerenderResult() {
+  if (!lastResult) return;
+  const filteredMatches = getFilteredMatches(lastResult.matches || []);
+  const filteredResult = {
+    ...lastResult,
+    matches: filteredMatches,
+  };
+  renderResultInternal(filteredResult);
+}
+
 function renderWhitelistSection(matches) {
   const snippets = matches.map((match) => {
     const target = whitelistTargetForSource(match.source);
@@ -176,7 +371,7 @@ function setActiveTab(tabId) {
   });
 }
 
-function renderResult(result) {
+function renderResultInternal(result) {
   const categories = ["SQL", "XSS", "TRAVERSAL", "RFI", "EVADE", "UPLOAD"];
   const request = result.request || { query: {}, headers: {} };
   const matches = result.matches || [];
@@ -230,7 +425,7 @@ function renderResult(result) {
                   `,
                 )
                 .join("")}</div>`
-            : '<div class="empty-state">No rules matched.</div>'
+            : '<div class="empty-state">No rules matched with current filters.</div>'
         }
       </div>
       ${renderWhitelistSection(matches)}
@@ -272,6 +467,12 @@ function renderResult(result) {
   setActiveTab(initialTabId);
 }
 
+function renderResult(result) {
+  lastResult = result;
+  populateFilters(result.matches || []);
+  renderResultInternal(result);
+}
+
 async function analyze() {
   const curl = curlInput.value.trim();
   if (!curl) {
@@ -286,10 +487,12 @@ async function analyze() {
   analyzeBtn.textContent = "Analyzing...";
 
   try {
+    const selectedRuleIds = Array.from(selectedRules);
+
     const response = await fetch("/api/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ curl }),
+      body: JSON.stringify({ curl, selectedRuleIds }),
     });
 
     const payload = await response.json();
@@ -318,4 +521,14 @@ curlInput.addEventListener("keydown", (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
     analyze();
   }
+});
+
+rulesToggleAll.addEventListener("change", handleRulesToggleAll);
+zonesToggleAll.addEventListener("change", handleZonesToggleAll);
+themeToggle.addEventListener("click", toggleTheme);
+
+// Initialize on page load
+document.addEventListener("DOMContentLoaded", () => {
+  initializeTheme();
+  initializeFilters();
 });

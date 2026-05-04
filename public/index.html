@@ -8,7 +8,17 @@
   </head>
   <body>
     <div class="shell">
-      <span class="kicker">NAXSI SCORE REPORTER</span>
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+        "
+      >
+        <h1 class="kicker">NAXSI SCORE REPORTER</h1>
+        <button id="themeToggle" class="secondary">🌙 Dark</button>
+      </div>
 
       <section class="layout">
         <div class="panel input-shell">
@@ -30,6 +40,38 @@ curl 'https://example.com/search?q=select%201'
               >Tip: paste a multi-line curl exactly as copied from
               terminal/devtools.</span
             >
+          </div>
+
+          <div id="filterPanel" class="filter-panel">
+            <h3>Filters</h3>
+            <div class="filter-section">
+              <label class="filter-label">
+                <input
+                  type="checkbox"
+                  id="rulesToggleAll"
+                  class="toggle-all"
+                  checked
+                />
+                <span>Rules (select all)</span>
+              </label>
+              <div id="rulesFilter" class="filter-list"></div>
+            </div>
+            <div
+              class="filter-section"
+              id="zoneFilterSection"
+              style="display: none"
+            >
+              <label class="filter-label">
+                <input
+                  type="checkbox"
+                  id="zonesToggleAll"
+                  class="toggle-all"
+                  checked
+                />
+                <span>Zones (select all)</span>
+              </label>
+              <div id="zonesFilter" class="filter-list"></div>
+            </div>
           </div>
         </div>
 

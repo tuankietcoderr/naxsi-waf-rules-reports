@@ -31,9 +31,9 @@ naxsi-score "curl 'http://example.com/search?q=test' \\
   -b 'session_id=abc123'"
 
 # With options
-node cli.js "curl http://example.com" --rules ./reference/nasxi_core.rules --plain --debug
+node cli.js "curl http://example.com" --rules ./reference/naxsi_core.rules --plain --debug
 # or
-naxsi-score "curl http://example.com" --rules ./reference/nasxi_core.rules --plain --debug
+naxsi-score "curl http://example.com" --rules ./reference/naxsi_core.rules --plain --debug
 ```
 
 ### 2. Use as module
@@ -43,7 +43,7 @@ const { analyzeRequest, generateReport } = require("./index");
 
 const result = analyzeRequest(
   'curl "http://example.com/search?q=select+1"',
-  "./reference/nasxi_core.rules",
+  "./reference/naxsi_core.rules",
 );
 
 console.log(generateReport(result.request, result.matches, result.scores));
@@ -83,6 +83,12 @@ Matched Rules:
       Message: html open tag
       Matched in: <script>
 
+Whitelist Suggestions:
+  Rule 1000 zone=ARGS
+      Suggestion: BasicRule wl:1000 "mz:$ARGS";
+  Rule 1302 zone=BODY
+      Suggestion: BasicRule wl:1302 "mz:$BODY";
+
 Score Summary:
   SQL          : 8
   XSS          : 8
@@ -102,7 +108,7 @@ TOTAL: 16  → ❌ BLOCKED
 
 | Option           | Description                                                      |
 | ---------------- | ---------------------------------------------------------------- |
-| `--rules <path>` | Path to NAXSI rules file (default: ./reference/nasxi_core.rules) |
+| `--rules <path>` | Path to NAXSI rules file (default: ./reference/naxsi_core.rules) |
 | `--plain`        | Generate plain text report (without colors)                      |
 | `--help, -h`     | Show help message                                                |
 
@@ -111,25 +117,25 @@ TOTAL: 16  → ❌ BLOCKED
 ### SQL Injection
 
 ```bash
-node cli.js "curl 'http://localhost/user?id=1 OR 1=1'"
+naxsi-score "curl 'http://localhost/user?id=1 OR 1=1'"
 ```
 
 ### XSS Attack
 
 ```bash
-node cli.js "curl -d '<img src=x onerror=alert(1)>' http://localhost/upload"
+naxsi-score "curl -d '<img src=x onerror=alert(1)>' http://localhost/upload"
 ```
 
 ### Path Traversal
 
 ```bash
-node cli.js "curl 'http://localhost/file?path=../../../../etc/passwd'"
+naxsi-score "curl 'http://localhost/file?path=../../../../etc/passwd'"
 ```
 
 ### Multiple Threats
 
 ```bash
-node cli.js "curl 'http://localhost/search?q=<script>alert(1)</script> UNION SELECT * FROM users'"
+naxsi-score "curl 'http://localhost/search?q=<script>alert(1)</script> UNION SELECT * FROM users'"
 ```
 
 ## Scoring Rules
@@ -151,9 +157,14 @@ node cli.js "curl 'http://localhost/search?q=<script>alert(1)</script> UNION SEL
 │   ├── matcher.js       # Pattern matching & scoring
 │   └── reporter.js      # Report generation
 ├── reference/
-│   └── nasxi_core.rules # NAXSI rules database
+│   └── naxsi_core.rules # NAXSI rules database
+├── public/
+│   └── app.js           # Web interface (optional)
+│   └── index.html       # Web interface (optional)
+│   └── styles.css       # Web interface styles (optional)
 ├── cli.js               # CLI interface
 ├── index.js             # Main module
+├── server.js            # (Optional) HTTP server for web interface
 ├── test.js              # Test suite
 └── package.json         # Dependencies
 ```
